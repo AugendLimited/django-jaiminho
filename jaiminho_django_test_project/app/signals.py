@@ -25,6 +25,12 @@ def on_event_published_through_relay_command(signal, sender, event_payload, **kw
 
 @receiver(jaiminho.signals.event_failed_to_publish_by_events_relay)
 def on_event_not_published_through_relay_command(
-    signal, sender, event_payload, **kwargs
+    signal, sender, event_payload, event=None, error=None, **kwargs
 ):
-    log_metric("event-failed-to-publish-through-outbox", event_payload, **kwargs)
+    log_metric(
+        "event-failed-to-publish-through-outbox",
+        event_payload,
+        event=event,
+        error=error,
+        **kwargs,
+    )

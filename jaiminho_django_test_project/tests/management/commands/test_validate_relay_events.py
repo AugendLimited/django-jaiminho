@@ -368,8 +368,7 @@ class TestValidateEventsRelay:
         expected_args = dill.loads(failed_event.message)
         mock_log_metric.assert_called_once_with(
             "event-published-through-outbox",
-            expected_args[0],
-            args=expected_args,
+            {"message": expected_args, "kwargs": {}},
         )
 
     @pytest.mark.parametrize(
@@ -392,11 +391,10 @@ class TestValidateEventsRelay:
         mock_internal_notify.assert_called_once()
         mock_event_published_signal.assert_not_called()
         expected_args = dill.loads(failed_event_with_kwargs.message)
+        expected_kwargs = dill.loads(failed_event_with_kwargs.kwargs)
         mock_log_metric.assert_called_once_with(
             "event-published-through-outbox",
-            expected_args[0],
-            args=expected_args,
-            **dill.loads(failed_event_with_kwargs.kwargs),
+            {"message": expected_args, "kwargs": expected_kwargs},
         )
 
     @pytest.mark.parametrize(
@@ -421,8 +419,9 @@ class TestValidateEventsRelay:
         expected_args = dill.loads(failed_event.message)
         mock_log_metric.assert_called_once_with(
             "event-failed-to-publish-through-outbox",
-            expected_args[0],
-            args=expected_args,
+            {"message": expected_args, "kwargs": {}},
+            event=mocker.ANY,
+            error=mocker.ANY,
         )
 
     @pytest.mark.parametrize(
@@ -445,11 +444,12 @@ class TestValidateEventsRelay:
         mock_internal_notify_fail.assert_called_once()
         mock_event_failed_to_publish_signal.assert_not_called()
         expected_args = dill.loads(failed_event_with_kwargs.message)
+        expected_kwargs = dill.loads(failed_event_with_kwargs.kwargs)
         mock_log_metric.assert_called_once_with(
             "event-failed-to-publish-through-outbox",
-            expected_args[0],
-            args=expected_args,
-            **dill.loads(failed_event_with_kwargs.kwargs),
+            {"message": expected_args, "kwargs": expected_kwargs},
+            event=mocker.ANY,
+            error=mocker.ANY,
         )
 
     @pytest.mark.parametrize(
