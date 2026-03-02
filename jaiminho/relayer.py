@@ -53,7 +53,7 @@ class EventRelayer:
         events_qs = Event.objects.filter(sent_at__isnull=True)
         events_qs = events_qs.filter(stream=stream)
 
-        events_qs = events_qs.order_by("created_at")
+        events_qs = events_qs.order_by("created_at", "id")
 
         if not events_qs:
             logger.info("No failed events found.")
