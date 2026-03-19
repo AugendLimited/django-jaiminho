@@ -59,14 +59,11 @@ class TestSendToOutbox:
             stream=jaiminho_django_test_project.send.EXAMPLE_STREAM,
         )
 
-        relayed_events = Event.objects.all().order_by("sent_at", "id")
+        relayed_events = Event.objects.all().order_by("id")
         assert relayed_events.count() == 2
         for event in relayed_events:
             assert event.sent_at is not None
-        assert (relayed_events[0].sent_at, relayed_events[0].id) <= (
-            relayed_events[1].sent_at,
-            relayed_events[1].id,
-        )
+        assert relayed_events[0].sent_at < relayed_events[1].sent_at
 
         assert os.path.exists(first_file_path)
         assert os.path.exists(second_file_path)

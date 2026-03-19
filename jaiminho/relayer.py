@@ -6,6 +6,7 @@ from jaiminho.models import Event
 from jaiminho.signals import (
     event_published_by_events_relay,
     event_failed_to_publish_by_events_relay,
+    get_event_payload,
 )
 from jaiminho import settings
 
@@ -25,35 +26,12 @@ def _extract_original_func(event):
     return original_fn
 
 
-def _send_event_published_signal(sender, message, kwargs):
-    """Emit event_published_by_events_relay without splatting payload into Signal.send().
-
-    Celery-style payloads contain 'args' and 'kwargs' keys. Passing **kwargs or
-    **payload into Signal.send() would cause: TypeError: got multiple values for
-    keyword argument 'args'. We pass the full payload under event_payload only.
-    """
-    event_published_by_events_relay.send(
-        sender=sender,
-        event_payload={"message": message, "kwargs": kwargs},
-    )
-
-
-def _send_event_failed_signal(sender, message, kwargs, event, error):
-    """Emit event_failed_to_publish_by_events_relay without splatting payload."""
-    event_failed_to_publish_by_events_relay.send(
-        sender=sender,
-        event_payload={"message": message, "kwargs": kwargs},
-        event=event,
-        error=error,
-    )
-
-
 class EventRelayer:
     def relay(self, stream=None):
         events_qs = Event.objects.filter(sent_at__isnull=True)
         events_qs = events_qs.filter(stream=stream)
 
-        events_qs = events_qs.order_by("created_at", "id")
+        events_qs = events_qs.order_by("created_at")
 
         if not events_qs:
             logger.info("No failed events found.")
@@ -62,6 +40,7 @@ class EventRelayer:
         for event in events_qs:
             args = dill.loads(event.message)
             kwargs = dill.loads(event.kwargs) if event.kwargs else {}
+            event_payload = get_event_payload(args)
 
             try:
                 original_fn = _extract_original_func(event)
@@ -83,10 +62,8 @@ class EventRelayer:
                         f"JAIMINHO-EVENTS-RELAY: Event marked as sent. Event: {event}, Payload: {args}"
                     )
 
-                _send_event_published_signal(
-                    sender=original_fn,
-                    message=args,
-                    kwargs=kwargs,
+                event_published_by_events_relay.send(
+                    sender=original_fn, event_payload=event_payload
                 )
 
             except (ModuleNotFoundError, AttributeError) as e:
@@ -106,10 +83,9 @@ class EventRelayer:
                     f"JAIMINHO-EVENTS-RELAY: An error occurred when relaying event: {event} | Error: {str(e)}"
                 )
                 original_fn = _extract_original_func(event)
-                _send_event_failed_signal(
+                event_failed_to_publish_by_events_relay.send(
                     sender=original_fn,
-                    message=args,
-                    kwargs=kwargs,
+                    event_payload=event_payload,
                     event=event,
                     error=e,
                 )

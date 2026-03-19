@@ -10,6 +10,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 from freezegun import freeze_time
 
 from jaiminho.constants import PublishStrategyType
+from jaiminho.signals import get_event_payload
 from jaiminho.models import Event
 from jaiminho.relayer import EventRelayer
 from jaiminho.tests.factories import EventFactory
@@ -368,7 +369,7 @@ class TestValidateEventsRelay:
         expected_args = dill.loads(failed_event.message)
         mock_log_metric.assert_called_once_with(
             "event-published-through-outbox",
-            {"message": expected_args, "kwargs": {}},
+            get_event_payload(expected_args),
         )
 
     @pytest.mark.parametrize(
@@ -391,10 +392,9 @@ class TestValidateEventsRelay:
         mock_internal_notify.assert_called_once()
         mock_event_published_signal.assert_not_called()
         expected_args = dill.loads(failed_event_with_kwargs.message)
-        expected_kwargs = dill.loads(failed_event_with_kwargs.kwargs)
         mock_log_metric.assert_called_once_with(
             "event-published-through-outbox",
-            {"message": expected_args, "kwargs": expected_kwargs},
+            get_event_payload(expected_args),
         )
 
     @pytest.mark.parametrize(
@@ -419,7 +419,7 @@ class TestValidateEventsRelay:
         expected_args = dill.loads(failed_event.message)
         mock_log_metric.assert_called_once_with(
             "event-failed-to-publish-through-outbox",
-            {"message": expected_args, "kwargs": {}},
+            get_event_payload(expected_args),
             event=mocker.ANY,
             error=mocker.ANY,
         )
@@ -444,10 +444,9 @@ class TestValidateEventsRelay:
         mock_internal_notify_fail.assert_called_once()
         mock_event_failed_to_publish_signal.assert_not_called()
         expected_args = dill.loads(failed_event_with_kwargs.message)
-        expected_kwargs = dill.loads(failed_event_with_kwargs.kwargs)
         mock_log_metric.assert_called_once_with(
             "event-failed-to-publish-through-outbox",
-            {"message": expected_args, "kwargs": expected_kwargs},
+            get_event_payload(expected_args),
             event=mocker.ANY,
             error=mocker.ANY,
         )

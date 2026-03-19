@@ -7,7 +7,7 @@ from django.db import transaction
 from jaiminho.constants import PublishStrategyType
 from jaiminho.models import Event
 from jaiminho.relayer import EventRelayer
-from jaiminho.signals import event_published, event_failed_to_publish
+from jaiminho.signals import event_published, event_failed_to_publish, get_event_payload
 from jaiminho import settings
 
 
@@ -90,10 +90,7 @@ def create_publish_strategy(strategy_type):
 
 
 def on_commit_hook(func, event, event_data, args, kwargs):
-    """Emit signals with event_payload only. Never pass args/kwargs as top-level
-    kwargs to avoid Celery-style payload collisions (TypeError: got multiple
-    values for keyword argument 'args')."""
-    event_payload = {"message": args, "kwargs": kwargs}
+    event_payload = get_event_payload(args)
 
     try:
         func(*args, **kwargs)

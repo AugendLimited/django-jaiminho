@@ -14,8 +14,8 @@ def on_event_published(signal, sender, event_payload, **kwargs):
 
 
 @receiver(jaiminho.signals.event_failed_to_publish)
-def on_event_not_published(signal, sender, event_payload, event=None, error=None, **kwargs):
-    log_metric("event-failed-to-publish", event_payload, event=event, error=error, **kwargs)
+def on_event_not_published(signal, sender, event_payload, **kwargs):
+    log_metric("event-failed-to-publish", event_payload, **kwargs)
 
 
 @receiver(jaiminho.signals.event_published_by_events_relay)
@@ -25,12 +25,6 @@ def on_event_published_through_relay_command(signal, sender, event_payload, **kw
 
 @receiver(jaiminho.signals.event_failed_to_publish_by_events_relay)
 def on_event_not_published_through_relay_command(
-    signal, sender, event_payload, event=None, error=None, **kwargs
+    signal, sender, event_payload, **kwargs
 ):
-    log_metric(
-        "event-failed-to-publish-through-outbox",
-        event_payload,
-        event=event,
-        error=error,
-        **kwargs,
-    )
+    log_metric("event-failed-to-publish-through-outbox", event_payload, **kwargs)
