@@ -107,12 +107,7 @@ def on_commit_hook(func, event, event_data, args, kwargs):
             f"JAIMINHO-ON-COMMIT-HOOK: Event failed to be published. Event: {event}, Payload: {args}, "
             f"Exception: {exc}"
         )
-        event_failed_to_publish.send(
-            sender=func,
-            event_payload=event_payload,
-            event=event,
-            error=exc,
-        )
+        event_failed_to_publish.send(sender=func, event_payload=event_payload)
         return
 
     if event:

@@ -17,12 +17,16 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def mock_log_metric(mocker):
-    return mocker.patch("jaiminho_django_test_project.app.signals.log_metric")
+    return mocker.patch(
+        "jaiminho_django_test_project.app.signals.log_metric", autospec=True
+    )
 
 
 @pytest.fixture
 def mock_internal_notify(mocker):
-    return mocker.patch("jaiminho_django_test_project.send.internal_notify")
+    return mocker.patch(
+        "jaiminho_django_test_project.send.internal_notify", autospec=True
+    )
 
 
 @pytest.fixture
@@ -42,19 +46,25 @@ def mock_should_persist_all_events(mocker):
 
 @pytest.fixture
 def mock_internal_notify_fail(mocker):
-    mock = mocker.patch("jaiminho_django_test_project.send.internal_notify")
+    mock = mocker.patch(
+        "jaiminho_django_test_project.send.internal_notify", autospec=True
+    )
     mock.side_effect = Exception("ups")
     return mock
 
 
 @pytest.fixture
 def mock_event_published_signal(mocker):
-    return mocker.patch("jaiminho.publish_strategies.event_published.send")
+    return mocker.patch(
+        "jaiminho.publish_strategies.event_published.send", autospec=True
+    )
 
 
 @pytest.fixture
 def mock_event_failed_to_publish_signal(mocker):
-    return mocker.patch("jaiminho.publish_strategies.event_failed_to_publish.send")
+    return mocker.patch(
+        "jaiminho.publish_strategies.event_failed_to_publish.send", autospec=True
+    )
 
 
 # we need this in the globals so we don't need to mock A LOT of things
@@ -274,8 +284,6 @@ class TestNotify:
         mock_log_metric.assert_called_once_with(
             "event-failed-to-publish",
             args[0],
-            event=mocker.ANY,
-            error=mocker.ANY,
         )
         assert len(callbacks) == 1
         assert "JAIMINHO-ON-COMMIT-HOOK: Event failed to be published" in caplog.text
@@ -308,8 +316,6 @@ class TestNotify:
         mock_log_metric.assert_called_once_with(
             "event-failed-to-publish",
             args[0],
-            event=mocker.ANY,
-            error=mocker.ANY,
         )
         assert len(callbacks) == 1
 
@@ -377,8 +383,6 @@ class TestNotify:
         mock_event_failed_to_publish_signal.assert_called_once_with(
             sender=original_func,
             event_payload=args[0],
-            event=mocker.ANY,
-            error=mocker.ANY,
         )
         assert len(callbacks) == 1
 
@@ -419,17 +423,13 @@ class TestNotify:
     @pytest.mark.parametrize(
         "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
     )
-    def test_celery_style_payload_no_signal_kwarg_collision(
+    def test_notify_publishes_with_celery_style_kwargs(
         self,
-        mock_internal_notify,
         mock_event_published_signal,
         mock_should_persist_all_events,
         mocker,
         publish_strategy,
     ):
-        """Regression: Celery-style payloads use 'args' and 'kwargs' keys. Passing
-        **kwargs into Signal.send() raises TypeError: got multiple values for
-        keyword argument 'args'. We pass event_payload only, never splat."""
         mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
         mocker.patch("jaiminho.settings.delete_after_send", True)
         mocker.patch("jaiminho.settings.persist_all_events", True)
@@ -449,7 +449,7 @@ class TestNotify:
     @pytest.mark.parametrize(
         "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
     )
-    def test_celery_style_payload_failure_no_signal_kwarg_collision(
+    def test_notify_failure_with_celery_style_kwargs(
         self,
         mock_internal_notify_fail,
         mock_event_failed_to_publish_signal,
@@ -457,8 +457,6 @@ class TestNotify:
         mocker,
         publish_strategy,
     ):
-        """Regression: event_failed_to_publish.send must not splat kwargs with
-        Celery-style 'args'/'kwargs' keys."""
         mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
         mocker.patch("jaiminho.settings.delete_after_send", True)
         mocker.patch("jaiminho.settings.persist_all_events", True)
@@ -472,8 +470,6 @@ class TestNotify:
         mock_event_failed_to_publish_signal.assert_called_once_with(
             sender=jaiminho_django_test_project.send.notify.original_func,
             event_payload=args[0],
-            event=mocker.ANY,
-            error=mocker.ANY,
         )
         assert len(callbacks) == 1
 
@@ -694,8 +690,6 @@ class TestNotifyWithStream:
         mock_log_metric.assert_called_once_with(
             "event-failed-to-publish",
             args[0],
-            event=mocker.ANY,
-            error=mocker.ANY,
         )
         assert len(callbacks) == 1
         assert "JAIMINHO-ON-COMMIT-HOOK: Event failed to be published" in caplog.text
@@ -728,8 +722,6 @@ class TestNotifyWithStream:
         mock_log_metric.assert_called_once_with(
             "event-failed-to-publish",
             args[0],
-            event=mocker.ANY,
-            error=mocker.ANY,
         )
         assert len(callbacks) == 1
 
